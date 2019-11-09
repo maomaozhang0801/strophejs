@@ -157,7 +157,7 @@ Strophe.Websocket.prototype = {
         this._closeSocket();
 
         // Create the new WobSocket
-        this.socket = new WebSocket(this._conn.service, "xmpp");
+        this.socket = new WebSocket(this._conn.service);
         this.socket.onopen = this._onOpen.bind(this);
         this.socket.onerror = this._onError.bind(this);
         this.socket.onclose = this._onClose.bind(this);
