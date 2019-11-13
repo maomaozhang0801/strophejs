@@ -43,7 +43,7 @@ const $build = core.$build;
  *  Returns:
  *    A new Strophe.WebSocket object.
  */
-Strophe.Websocket = function(connection) {
+Strophe.Websocket = function (connection) {
     this._conn = connection;
     this.strip = "wrapper";
 
@@ -106,19 +106,24 @@ Strophe.Websocket.prototype = {
 
         let condition = "";
         let text = "";
+        let type;
 
         const ns = "urn:ietf:params:xml:ns:xmpp-streams";
-        for (let i=0; i<error.childNodes.length; i++) {
-            const e = error.childNodes[i];
-            if (e.getAttribute("xmlns") !== ns) {
-                break;
-            } if (e.nodeName === "text") {
-                text = e.textContent;
-            } else {
-                condition = e.nodeName;
+        if (error.childNodes.length != 0) {
+            for (let i = 0; i < error.childNodes.length; i++) {
+                const e = error.childNodes[i];
+                if (e.getAttribute("xmlns") !== ns) {
+                    break;
+                } if (e.nodeName === "text") {
+                    text = e.textContent;
+                } else {
+                    condition = e.nodeName;
+                }
             }
+        } else {
+            condition = error.getAttribute("type");
         }
-
+        
         let errorString = "WebSocket stream error: ";
         if (condition) {
             errorString += condition;
@@ -172,7 +177,7 @@ Strophe.Websocket.prototype = {
      *  Parameters:
      *    (Strophe.Request) bodyWrap - The received stanza.
      */
-    _connect_cb: function(bodyWrap) {
+    _connect_cb: function (bodyWrap) {
         const error = this._check_streamerror(bodyWrap, Strophe.Status.CONNFAIL);
         if (error) {
             return Strophe.Status.CONNFAIL;
@@ -187,7 +192,7 @@ Strophe.Websocket.prototype = {
      *  Parameters:
      *    (Node) message - Stanza containing the <open /> tag.
      */
-    _handleStreamStart: function(message) {
+    _handleStreamStart: function (message) {
         let error = false;
 
         // Check for errors in the <open /> tag
@@ -219,7 +224,7 @@ Strophe.Websocket.prototype = {
      * On receiving an opening stream tag this callback replaces itself with the real
      * message handler. On receiving a stream error the connection is terminated.
      */
-    _connect_cb_wrapper: function(message) {
+    _connect_cb_wrapper: function (message) {
         if (message.data.indexOf("<open ") === 0 || message.data.indexOf("<?xml") === 0) {
             // Strip the XML Declaration, if there is one
             const data = message.data.replace(/^(<\?.*?\?>\s*)*/, "");
@@ -348,7 +353,7 @@ Strophe.Websocket.prototype = {
      *
      * Nothing to do here for WebSockets
      */
-    _onClose: function(e) {
+    _onClose: function (e) {
         if (this._conn.connected && !this._conn.disconnecting) {
             Strophe.error("Websocket closed unexpectedly");
             this._conn._doDisconnect();
@@ -390,12 +395,12 @@ Strophe.Websocket.prototype = {
      *
      *  This does nothing for WebSockets
      */
-    _onDisconnectTimeout: function () {},
+    _onDisconnectTimeout: function () { },
 
     /** PrivateFunction: _abortAllRequests
      *  _Private_ helper function that makes sure all pending requests are aborted.
      */
-    _abortAllRequests: function () {},
+    _abortAllRequests: function () { },
 
     /** PrivateFunction: _onError
      * _Private_ function to handle websockets errors.
@@ -403,7 +408,7 @@ Strophe.Websocket.prototype = {
      * Parameters:
      * (Object) error - The websocket error.
      */
-    _onError: function(error) {
+    _onError: function (error) {
         Strophe.error("Websocket error " + error);
         this._conn._changeConnectStatus(
             Strophe.Status.CONNFAIL,
@@ -420,7 +425,7 @@ Strophe.Websocket.prototype = {
     _onIdle: function () {
         const data = this._conn._data;
         if (data.length > 0 && !this._conn.paused) {
-            for (let i=0; i<data.length; i++) {
+            for (let i = 0; i < data.length; i++) {
                 if (data[i] !== null) {
                     let stanza;
                     if (data[i] === "restart") {
@@ -461,7 +466,7 @@ Strophe.Websocket.prototype = {
      * Parameters:
      * (string) message - The websocket message.
      */
-    _onMessage: function(message) {
+    _onMessage: function (message) {
         let elem;
         // check for closing stream
         const close = '<close xmlns="urn:ietf:params:xml:ns:xmpp-framing" />';
@@ -489,8 +494,8 @@ Strophe.Websocket.prototype = {
 
         //handle unavailable presence stanza before disconnecting
         if (this._conn.disconnecting &&
-                elem.firstChild.nodeName === "presence" &&
-                elem.firstChild.getAttribute("type") === "unavailable") {
+            elem.firstChild.nodeName === "presence" &&
+            elem.firstChild.getAttribute("type") === "unavailable") {
             this._conn.xmlInput(elem);
             this._conn.rawInput(Strophe.serialize(elem));
             // if we are already disconnecting we will ignore the unavailable stanza and
@@ -505,7 +510,7 @@ Strophe.Websocket.prototype = {
      *
      * The opening stream tag is sent here.
      */
-    _onOpen: function() {
+    _onOpen: function () {
         Strophe.debug("Websocket open");
         const start = this._buildStream();
         this._conn.xmlOutput(start.tree());
