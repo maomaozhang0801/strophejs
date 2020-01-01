@@ -871,7 +871,7 @@ Strophe.Bosh.prototype = {
     _send: function () {
         clearTimeout(this._conn._idleTimeout);
         this._throttledRequestHandler();
-        this._conn._idleTimeout = setTimeout(() => this._conn._onIdle(), 100);
+        this._conn._idleTimeout = setTimeout(() => this._conn._onIdle(), Strophe.onIdleTimer);
     },
 
     /** PrivateFunction: _sendRestart
