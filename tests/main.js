@@ -1,26 +1,13 @@
-require.config({
-    baseUrl: '../',
-    paths: {
-        "strophe":          "dist/strophe",
-
-        // Examples
-        "basic":            "examples/basic",
-
-        // Tests
-        "jquery":           "node_modules/jquery/dist/jquery",
-        "sinon":            "node_modules/sinon/pkg/sinon",
-        "sinon-qunit":      "node_modules/sinon-qunit/lib/sinon-qunit",
-        "tests":            "tests/tests"
-    },
-
-    shim: {
-        'sinon-qunit':  { deps: ['sinon']}
-    }
-});
-
-require(["tests", "strophe"], function (tests, Strophe) {
-    window.Strophe = Strophe;
-
+config.baseUrl = '../';
+config.paths.jquery         = "node_modules/jquery/dist/jquery";
+config.paths.sinon          = "node_modules/sinon/pkg/sinon";
+config.paths["sinon-qunit"] = "node_modules/sinon-qunit/lib/sinon-qunit";
+config.paths.tests          = "tests/tests";
+config.shim = {
+    'sinon-qunit':  { deps: ['sinon']}
+};
+require.config(config);
+require(["tests", "strophe-polyfill"], function(tests) {
     QUnit.done(function (details) {
         console.log("Total: "+details.total+" Failed: "+details.failed+" Passed: "+details.passed+" Runtime: "+details.runtime);
         console.log("All tests completed!");

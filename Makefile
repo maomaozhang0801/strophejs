@@ -1,15 +1,19 @@
+BOWER			?= node_modules/.bin/bower
 CHROMIUM		?= ./node_modules/.bin/run-headless-chromium
 DOC_DIR			= doc
 DOC_TEMP		= doc-temp
 HTTPSERVE		?= ./node_modules/.bin/http-server
 HTTPSERVE_PORT  ?= 8080
-ESLINT		  	?= ./node_modules/.bin/eslint
+JSHINT			?= ./node_modules/.bin/jshint
 NDPROJ_DIR 		= ndproj
+RJS				?= ./node_modules/.bin/r.js
 SED				?= sed
 SHELL			?= /usr/env/bin/bash
 SRC_DIR			= src
-STROPHE			= dist/strophe.js
-STROPHE_MIN		= dist/strophe.min.js
+
+STROPHE			= strophe.js
+STROPHE_MIN		= strophe.min.js
+STROPHE_LIGHT	= strophe-no-polyfill.js
 
 all: doc $(STROPHE) $(STROPHE_MIN)
 
@@ -19,9 +23,9 @@ help:
 	@echo ""
 	@echo " all         Update docs + build $(STROPHE) and $(STROPHE_MIN)"
 	@echo " doc         Update docs"
-	@echo " dist        Build $(STROPHE) and $(STROPHE_MIN)"
+	@echo " dist        Build $(STROPHE), $(STROPHE_MIN) and $(STROPHE_LIGHT)"
 	@echo " check       Build and run the tests"
-	@echo " eslint      Check code quality"
+	@echo " jshint      Check code quality"
 	@echo " release     Prepare a new release of $(STROPHE). E.g. \`make release VERSION=1.2.14\`"
 	@echo " serve       Serve this directory via a webserver on port 8000."
 	@echo " stamp-npm   Install NPM dependencies and create the guard file stamp-npm which will prevent those dependencies from being installed again."
@@ -52,27 +56,27 @@ release:
 	make dist
 	make doc
 
-.PHONY: watchjs
-watchjs: stamp-npm
-	./node_modules/.bin/npx  webpack --mode=development  --watch
-
 .PHONY: dist
-dist: $(STROPHE) $(STROPHE_MIN)
+dist: $(STROPHE) $(STROPHE_MIN) $(STROPHE_LIGHT)
 
-$(STROPHE_MIN): src webpack.config.js node_modules Makefile stamp-npm
-	./node_modules/.bin/npx  webpack --mode=production
+$(STROPHE_MIN): src node_modules Makefile
+	$(RJS) -o build.js insertRequire=strophe-polyfill include=strophe-polyfill out=$(STROPHE_MIN)
 	$(SED) -i s/@VERSION@/$(VERSION)/ $(STROPHE_MIN)
 
-$(STROPHE): src webpack.config.js node_modules Makefile stamp-npm
-	./node_modules/.bin/npx  webpack --mode=development
+$(STROPHE): src node_modules Makefile
+	$(RJS) -o build.js optimize=none insertRequire=strophe-polyfill include=strophe-polyfill out=$(STROPHE)
 	$(SED) -i s/@VERSION@/$(VERSION)/ $(STROPHE)
 
-.PHONY: eslint
-eslint: stamp-npm
-	$(ESLINT) src/
+$(STROPHE_LIGHT): src node_modules Makefile
+	$(RJS) -o build.js optimize=none out=$(STROPHE_LIGHT)
+	$(SED) -i s/@VERSION@/$(VERSION)/ $(STROPHE_LIGHT)
+
+.PHONY: jshint
+jshint: stamp-npm
+	$(JSHINT) --config jshintrc src/*.js
 
 .PHONY: check
-check:: stamp-npm eslint
+check:: stamp-npm jshint
 	LOG_CR_VERBOSITY=INFO $(CHROMIUM) --no-sandbox http://localhost:$(HTTPSERVE_PORT)/tests/
 
 .PHONY: serve
@@ -89,6 +93,7 @@ clean:
 	@@rm -rf node_modules
 	@@rm -f $(STROPHE)
 	@@rm -f $(STROPHE_MIN)
+	@@rm -f $(STROPHE_LIGHT)
 	@@rm -f $(PLUGIN_FILES_MIN)
 	@@rm -rf $(NDPROJ_DIR) $(DOC_DIR) $(DOC_TEMP)
 	@@echo "Done."

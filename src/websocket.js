@@ -5,13 +5,26 @@
     Copyright 2006-2008, OGG, LLC
 */
 
-/* global window, clearTimeout, WebSocket, DOMParser */
+/* jshint undef: true, unused: true:, noarg: true, latedef: true */
+/* global define, window, clearTimeout, WebSocket, DOMParser, Strophe, $build */
 
-import core from 'core';
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        define(['strophe-core'], function (core) {
+            return factory(
+                core.Strophe,
+                core.$build
+            );
+        });
+    } else if (typeof exports === 'object') {
+        var core = require('./core');
 
-const Strophe = core.Strophe;
-const $build = core.$build;
-
+        module.exports = factory(core.Strophe, core.$build);
+    } else {
+        // Browser globals
+        return factory(Strophe, $build);
+    }
+}(this, function (Strophe, $build) {
 
 /** Class: Strophe.WebSocket
  *  _Private_ helper class that handles WebSocket Connections
@@ -46,11 +59,12 @@ Strophe.Websocket = function(connection) {
     this._conn = connection;
     this.strip = "wrapper";
 
-    const service = connection.service;
+    var service = connection.service;
     if (service.indexOf("ws:") !== 0 && service.indexOf("wss:") !== 0) {
         // If the service is not an absolute URL, assume it is a path and put the absolute
         // URL together from options, current URL and the path.
-        let new_service = "";
+        var new_service = "";
+
         if (connection.options.protocol === "ws" && window.location.protocol !== "https:") {
             new_service += "ws";
         } else {
@@ -58,11 +72,13 @@ Strophe.Websocket = function(connection) {
         }
 
         new_service += "://" + window.location.host;
+
         if (service.indexOf("/") !== 0) {
             new_service += window.location.pathname + service;
         } else {
             new_service += service;
         }
+
         connection.service = new_service;
     }
 };
@@ -92,7 +108,7 @@ Strophe.Websocket.prototype = {
      *     true if there was a streamerror, false otherwise.
      */
     _check_streamerror: function (bodyWrap, connectstatus) {
-        let errors;
+        var errors;
         if (bodyWrap.getElementsByTagNameNS) {
             errors = bodyWrap.getElementsByTagNameNS(Strophe.NS.STREAM, "error");
         } else {
@@ -101,14 +117,14 @@ Strophe.Websocket.prototype = {
         if (errors.length === 0) {
             return false;
         }
-        const error = errors[0];
+        var error = errors[0];
 
-        let condition = "";
-        let text = "";
+        var condition = "";
+        var text = "";
 
-        const ns = "urn:ietf:params:xml:ns:xmpp-streams";
-        for (let i=0; i<error.childNodes.length; i++) {
-            const e = error.childNodes[i];
+        var ns = "urn:ietf:params:xml:ns:xmpp-streams";
+        for (var i = 0; i < error.childNodes.length; i++) {
+            var e = error.childNodes[i];
             if (e.getAttribute("xmlns") !== ns) {
                 break;
             } if (e.nodeName === "text") {
@@ -118,15 +134,18 @@ Strophe.Websocket.prototype = {
             }
         }
 
-        let errorString = "WebSocket stream error: ";
+        var errorString = "WebSocket stream error: ";
+
         if (condition) {
             errorString += condition;
         } else {
             errorString += "unknown";
         }
+
         if (text) {
             errorString += " - " + text;
         }
+
         Strophe.error(errorString);
 
         // close the connection on stream_error
@@ -172,7 +191,7 @@ Strophe.Websocket.prototype = {
      *    (Strophe.Request) bodyWrap - The received stanza.
      */
     _connect_cb: function(bodyWrap) {
-        const error = this._check_streamerror(bodyWrap, Strophe.Status.CONNFAIL);
+        var error = this._check_streamerror(bodyWrap, Strophe.Status.CONNFAIL);
         if (error) {
             return Strophe.Status.CONNFAIL;
         }
@@ -187,17 +206,17 @@ Strophe.Websocket.prototype = {
      *    (Node) message - Stanza containing the <open /> tag.
      */
     _handleStreamStart: function(message) {
-        let error = false;
+        var error = false;
 
         // Check for errors in the <open /> tag
-        const ns = message.getAttribute("xmlns");
+        var ns = message.getAttribute("xmlns");
         if (typeof ns !== "string") {
             error = "Missing xmlns in <open />";
         } else if (ns !== Strophe.NS.FRAMING) {
             error = "Wrong xmlns in <open />: " + ns;
         }
 
-        const ver = message.getAttribute("version");
+        var ver = message.getAttribute("version");
         if (typeof ver !== "string") {
             error = "Missing version in <open />";
         } else if (ver !== "1.0") {
@@ -209,6 +228,7 @@ Strophe.Websocket.prototype = {
             this._conn._doDisconnect();
             return false;
         }
+
         return true;
     },
 
@@ -221,10 +241,10 @@ Strophe.Websocket.prototype = {
     _connect_cb_wrapper: function(message) {
         if (message.data.indexOf("<open ") === 0 || message.data.indexOf("<?xml") === 0) {
             // Strip the XML Declaration, if there is one
-            const data = message.data.replace(/^(<\?.*?\?>\s*)*/, "");
+            var data = message.data.replace(/^(<\?.*?\?>\s*)*/, "");
             if (data === '') return;
 
-            const streamStart = new DOMParser().parseFromString(data, "text/xml").documentElement;
+            var streamStart = new DOMParser().parseFromString(data, "text/xml").documentElement;
             this._conn.xmlInput(streamStart);
             this._conn.rawInput(message.data);
 
@@ -235,16 +255,16 @@ Strophe.Websocket.prototype = {
             }
         } else if (message.data.indexOf("<close ") === 0) { // <close xmlns="urn:ietf:params:xml:ns:xmpp-framing />
             // Parse the raw string to an XML element
-            const parsedMessage = new DOMParser().parseFromString(message.data, "text/xml").documentElement;
+            var parsedMessage = new DOMParser().parseFromString(message.data, "text/xml").documentElement;
             // Report this input to the raw and xml handlers
             this._conn.xmlInput(parsedMessage);
             this._conn.rawInput(message.data);
-            const see_uri = parsedMessage.getAttribute("see-other-uri");
+            var see_uri = parsedMessage.getAttribute("see-other-uri");
             if (see_uri) {
-                const service = this._conn.service;
+                var service = this._conn.service;
                 // Valid scenarios: WSS->WSS, WS->ANY
-                const isSecureRedirect = (service.indexOf("wss:") >= 0 && see_uri.indexOf("wss:") >= 0) || (service.indexOf("ws:") >= 0);
-                if (isSecureRedirect) {
+                var isSecureRedirect = (service.indexOf("wss:") >= 0 && see_uri.indexOf("wss:") >= 0) || (service.indexOf("ws:") >= 0);
+                if(isSecureRedirect) {
                     this._conn._changeConnectStatus(
                         Strophe.Status.REDIRECT,
                         "Received see-other-uri, resetting connection"
@@ -261,8 +281,8 @@ Strophe.Websocket.prototype = {
                 this._conn._doDisconnect();
             }
         } else {
-            const string = this._streamWrap(message.data);
-            const elem = new DOMParser().parseFromString(string, "text/xml").documentElement;
+            var string = this._streamWrap(message.data);
+            var elem = new DOMParser().parseFromString(string, "text/xml").documentElement;
             this.socket.onmessage = this._onMessage.bind(this);
             this._conn._connect_cb(elem, null, message.data);
         }
@@ -281,9 +301,9 @@ Strophe.Websocket.prototype = {
             if (pres) {
                 this._conn.send(pres);
             }
-            const close = $build("close", { "xmlns": Strophe.NS.FRAMING });
+            var close = $build("close", { "xmlns": Strophe.NS.FRAMING });
             this._conn.xmlOutput(close.tree());
-            const closeString = Strophe.serialize(close);
+            var closeString = Strophe.serialize(close);
             this._conn.rawOutput(closeString);
             try {
                 this.socket.send(closeString);
@@ -319,14 +339,10 @@ Strophe.Websocket.prototype = {
      *  Closes the socket if it is still open and deletes it
      */
     _closeSocket: function () {
-        if (this.socket) {
-            try {
-                this.socket.onerror = null;
-                this.socket.close();
-            } catch (e) {
-                Strophe.debug(e.message);
-            }
-        }
+        if (this.socket) { try {
+            this.socket.onerror = null;
+            this.socket.close();
+        } catch (e) {} }
         this.socket = null;
     },
 
@@ -346,7 +362,7 @@ Strophe.Websocket.prototype = {
      * Nothing to do here for WebSockets
      */
     _onClose: function(e) {
-        if (this._conn.connected && !this._conn.disconnecting) {
+        if(this._conn.connected && !this._conn.disconnecting) {
             Strophe.error("Websocket closed unexpectedly");
             this._conn._doDisconnect();
         } else if (e && e.code === 1006 && !this._conn.connected && this.socket) {
@@ -415,17 +431,17 @@ Strophe.Websocket.prototype = {
      *  sends all queued stanzas
      */
     _onIdle: function () {
-        const data = this._conn._data;
+        var data = this._conn._data;
         if (data.length > 0 && !this._conn.paused) {
-            for (let i=0; i<data.length; i++) {
+            for (var i = 0; i < data.length; i++) {
                 if (data[i] !== null) {
-                    let stanza;
+                    var stanza, rawStanza;
                     if (data[i] === "restart") {
                         stanza = this._buildStream().tree();
                     } else {
                         stanza = data[i];
                     }
-                    const rawStanza = Strophe.serialize(stanza);
+                    rawStanza = Strophe.serialize(stanza);
                     this._conn.xmlOutput(stanza);
                     this._conn.rawOutput(rawStanza);
                     this.socket.send(rawStanza);
@@ -459,9 +475,9 @@ Strophe.Websocket.prototype = {
      * (string) message - The websocket message.
      */
     _onMessage: function(message) {
-        let elem;
+        var elem, data;
         // check for closing stream
-        const close = '<close xmlns="urn:ietf:params:xml:ns:xmpp-framing" />';
+        var close = '<close xmlns="urn:ietf:params:xml:ns:xmpp-framing" />';
         if (message.data === close) {
             this._conn.rawInput(close);
             this._conn.xmlInput(message);
@@ -476,7 +492,7 @@ Strophe.Websocket.prototype = {
                 return;
             }
         } else {
-            const data = this._streamWrap(message.data);
+            data = this._streamWrap(message.data);
             elem = new DOMParser().parseFromString(data, "text/xml").documentElement;
         }
 
@@ -504,10 +520,10 @@ Strophe.Websocket.prototype = {
      */
     _onOpen: function() {
         Strophe.info("Websocket open");
-        const start = this._buildStream();
+        var start = this._buildStream();
         this._conn.xmlOutput(start.tree());
 
-        const startString = Strophe.serialize(start);
+        var startString = Strophe.serialize(start);
         this._conn.rawOutput(startString);
         this.socket.send(startString);
     },
@@ -545,3 +561,5 @@ Strophe.Websocket.prototype = {
         this._conn._onIdle.bind(this._conn)();
     }
 };
+return Strophe;
+}));

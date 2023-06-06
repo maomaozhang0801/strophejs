@@ -1,18 +1,5 @@
 # Strophe.js Change Log
 
-## Version 1.3.2 - (2019-03-21)
-
-* #320 Fix error on SCRAM-SHA-1 client nonce generation
-
-## Version 1.3.1 - (2018-11-15)
-
-* #311 Expose `Strophe`, `$build`, `$msg` and `$iq` as globals
-
-## Version 1.3.0 - (2018-10-21)
-
-* Use ES2015 modules
-* Drop support for Internet Explorer < 11
-
 ## Version 1.2.16 - (2018-09-16)
 * #299 'no-auth-mech' error. Server did not offer a supported authentication mechanism
 * #306 Fix websocket close handler exception and reporting
