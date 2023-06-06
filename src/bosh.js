@@ -7,8 +7,7 @@
 
 /* global window, setTimeout, clearTimeout, XMLHttpRequest, ActiveXObject */
 
-import { DOMParser } from './shims'
-import core from './core';
+import core from 'core';
 
 const Strophe = core.Strophe;
 const $build = core.$build;
@@ -507,7 +506,9 @@ Strophe.Bosh.prototype = {
             const req = this._requests.pop();
             req.abort = true;
             req.xhr.abort();
-            req.xhr.onreadystatechange = function () {};
+            // jslint complains, but this is fine. setting to empty func
+            // is necessary for IE6
+            req.xhr.onreadystatechange = function () {}; // jshint ignore:line
         }
     },
 
@@ -521,7 +522,8 @@ Strophe.Bosh.prototype = {
         // if no requests are in progress, poll
         if (this._conn.authenticated && this._requests.length === 0 &&
             data.length === 0 && !this._conn.disconnecting) {
-            Strophe.debug("no requests during idle cycle, sending blank request");
+            Strophe.info("no requests during idle cycle, sending " +
+                         "blank request");
             data.push(null);
         }
 
@@ -849,7 +851,7 @@ Strophe.Bosh.prototype = {
      *  presence if authentication has completed.
      */
     _sendTerminate: function (pres) {
-        Strophe.debug("_sendTerminate was called");
+        Strophe.info("_sendTerminate was called");
         const body = this._buildBody().attrs({type: "terminate"});
         if (pres) {
             body.cnode(pres.tree());
@@ -871,7 +873,7 @@ Strophe.Bosh.prototype = {
     _send: function () {
         clearTimeout(this._conn._idleTimeout);
         this._throttledRequestHandler();
-        this._conn._idleTimeout = setTimeout(() => this._conn._onIdle(), Strophe.onIdleTimer);
+        this._conn._idleTimeout = setTimeout(() => this._conn._onIdle(), 100);
     },
 
     /** PrivateFunction: _sendRestart
